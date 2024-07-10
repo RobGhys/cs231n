@@ -2,7 +2,6 @@ from builtins import range
 import numpy as np
 
 
-
 def affine_forward(x, w, b):
     """
     Computes the forward pass for an affine (fully-connected) layer.
@@ -28,7 +27,16 @@ def affine_forward(x, w, b):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    print(f'shape of x before: {x.shape}')
+    # reshape x
+    N = x.shape[0]
+    D = np.prod(x.shape[1:])  # D = d_1 * ... * d_k -> product of all the dimensions from x, except from the first one
+
+    print(f'D: {D}')
+    x = x.reshape(N, D)  # shape (N, D)
+    print(f'shape of x after: {x.shape}')
+    print(f'shape of b: {b.shape}')
+    out = x.dot(w) + b  # shape (N, M)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
