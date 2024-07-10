@@ -132,8 +132,20 @@ class KNearestNeighbor(object):
         #       and two broadcast sums.                                         #
         #########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        # Step 1: Compute the sum of squares for the test data
+        X_square = np.sum(X ** 2, axis=1).reshape((num_test, 1))
 
-        pass
+        # Step 2: Compute the sum of squares for the training data
+        X_train_square = np.sum(self.X_train ** 2, axis=1).reshape((1, num_train))
+
+        # Step 3: Compute the inner product
+        inner_product = np.dot(X, self.X_train.T)
+
+        # Step 4: Combine the results to get the distances squared
+        dists_squared = X_square + X_train_square - 2 * inner_product
+
+        # Step 5: Take the square root to get the distances
+        dists = np.sqrt(dists_squared)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists

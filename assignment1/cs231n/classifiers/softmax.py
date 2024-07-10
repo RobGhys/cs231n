@@ -33,9 +33,29 @@ def softmax_loss_naive(W, X, y, reg):
     # regularization!                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    # Number of training examples
+    num_train = X.shape[0]
+    # Number of classes
+    num_classes = W.shape[1]
 
-    pass
+    for i in range(num_train):  # N
+        scores = X[i].dot(W)  # shape (C, )
+        scores -= np.max(scores)  # numerical stability fix
+        exp_scores = np.exp(scores)
+        probs = exp_scores / np.sum(exp_scores)  # shape (C, )
 
+        correct_clas_prob = probs[y[i]]
+        loss -= np.log(correct_clas_prob)
+
+        for j in range(num_classes):
+            dW[:, j] += X[i] * (probs[j] - (j == y[i]))
+
+    loss /= num_train  # average
+    dW /= num_train
+
+    # Regul
+    loss += 1/2 * reg * np.sum(W*W)
+    dW += reg * W
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     return loss, dW
@@ -58,8 +78,31 @@ def softmax_loss_vectorized(W, X, y, reg):
     # regularization!                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    num_train = X.shape[0]
 
-    pass
+    scores = X.dot(W) # N*D . D*C -> shape = (N*C)
+    scores -= np.max(scores, axis=1, keepdims=True)
+    exp_scores = np.exp(scores)
+    probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)  # shape (N*C)
+
+    # Loss
+    # np.arange(num_train) selects the row indices (0 to N-1)
+    # y selects the column indices, which are the correct class labels for each training example.
+    # below, we extract the probability of the correct class for each training example
+    correct_class_probs = probs[np.arange(num_train), y]  # shape (N, )
+    loss = -np.sum(np.log(correct_class_probs))
+
+    # average the loss
+    loss /= num_train
+
+    # regularize the loss
+    loss += 1/2 * reg * np.sum(W*W)
+
+    # compute gradient
+    probs[np.arange(num_train), y] -= 1
+    dW = X.T.dot(probs) # shape (D, C)
+    dW /= num_train # average
+    dW += reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
