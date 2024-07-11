@@ -1,5 +1,6 @@
 from builtins import range
 import numpy as np
+import copy
 
 
 def affine_forward(x, w, b):
@@ -27,16 +28,13 @@ def affine_forward(x, w, b):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    print(f'shape of x before: {x.shape}')
-    # reshape x
-    N = x.shape[0]
-    D = np.prod(x.shape[1:])  # D = d_1 * ... * d_k -> product of all the dimensions from x, except from the first one
+    # reshape x as a copy (x needs to keep its shape for the cache in the return statement)
+    x_copy = copy.deepcopy(x)
+    N = x_copy.shape[0]
+    D = np.prod(x_copy.shape[1:])  # D = d_1 * ... * d_k -> product of all the dimensions from x, except from the first one
 
-    print(f'D: {D}')
-    x = x.reshape(N, D)  # shape (N, D)
-    print(f'shape of x after: {x.shape}')
-    print(f'shape of b: {b.shape}')
-    out = x.dot(w) + b  # shape (N, M)
+    x_copy = x_copy.reshape(N, D)  # shape (N, D)
+    out = x_copy.dot(w) + b  # shape (N, M)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -63,13 +61,21 @@ def affine_backward(dout, cache):
     - db: Gradient with respect to b, of shape (M,)
     """
     x, w, b = cache
+    d1todk = x.shape[1:]
+    N = x.shape[0]
+    D = np.prod(x.shape[1:])  # D = d_1 * ... * d_k -> product of all the dimensions from x, except from the first one
+
+    x = x.reshape(N, D)  # shape (N, D)
     dx, dw, db = None, None, None
     ###########################################################################
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    db = np.sum(dout, axis=0)  # shape (M, )
+    dw = x.T.dot(dout)
+    dx = dout.dot(w.T)  # shape (N, D)
+    dx = dx.reshape(N, *d1todk)  # reshape dx to shape (N, d1, ..., d_k)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
