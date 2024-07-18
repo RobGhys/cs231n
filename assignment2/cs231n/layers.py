@@ -593,20 +593,49 @@ def conv_forward_naive(x, w, b, conv_param):
       W' = 1 + (W + 2 * pad - WW) / stride
     - cache: (x, w, b, conv_param)
     """
-    out = None
     ###########################################################################
     # TODO: Implement the convolutional forward pass.                         #
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # Store useful variables
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    H_out = 1 + (H + 2 * pad - HH) // stride
+    W_out = 1 + (W + 2 * pad - WW) // stride
+
+    out = np.zeros((N, F, H_out, W_out))
+    # Convolution
+    x_padded = copy.deepcopy(x)
+    x_padded = np.pad(x_padded, ((0, 0), (0, 0), (pad, pad), (pad, pad)), mode='constant', constant_values=0)
+
+    for n in range(N):  # iterate over all the images
+        for f in range(F):  # iterate over all the filters
+            for i in range(H_out):
+                for j in range(W_out):
+                    # Find the corners of the current "slice"
+                    h_start = i * stride
+                    w_start = j * stride
+                    h_end = h_start + HH
+                    w_end = w_start + WW
+
+                    # Extract the block from the padded input image
+                    x_slice = x_padded[n, :, h_start:h_end, w_start:w_end]
+                    print(f"x_slice shape: {x_slice.shape}, filter shape: {w[f, :, :, :].shape}")
+                    # Perform element-wise multiplication and sum the result
+                    s = np.sum(x_slice * w[f, :, :, :])
+
+                    # Add the bias
+                    out[n, f, i, j] = s + b[f]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
-    cache = (x, w, b, conv_param)
+    cache = (x, j, b, conv_param)
     return out, cache
 
 
