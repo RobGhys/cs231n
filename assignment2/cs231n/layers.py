@@ -624,7 +624,6 @@ def conv_forward_naive(x, w, b, conv_param):
 
                     # Extract the block from the padded input image
                     x_slice = x_padded[n, :, h_start:h_end, w_start:w_end]
-                    print(f"x_slice shape: {x_slice.shape}, filter shape: {w[f, :, :, :].shape}")
                     # Perform element-wise multiplication and sum the result
                     s = np.sum(x_slice * w[f, :, :, :])
 
@@ -635,7 +634,7 @@ def conv_forward_naive(x, w, b, conv_param):
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
-    cache = (x, j, b, conv_param)
+    cache = (x, w, b, conv_param)
     return out, cache
 
 
@@ -657,7 +656,49 @@ def conv_backward_naive(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, w, b, conv_param = cache
+    stride, pad = conv_param['stride'], conv_param['pad']
+
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+    _, _, H_out, W_out = dout.shape
+
+    # Add padding to the input
+    x_padded = np.pad(x, ((0,), (0,), (pad,), (pad,)), mode='constant', constant_values=0)
+
+    # Initialize gradients
+    dx = np.zeros_like(x)
+    dx_padded = np.zeros_like(x_padded)
+    dw = np.zeros_like(w)
+    db = np.zeros_like(b)
+
+    # Calculate db
+    for f in range(F):
+        db[f] = np.sum(dout[:, f, :, :])
+
+    # Calculate dw and dx
+    for n in range(N):
+        for f in range(F):
+            for i in range(H_out):
+                for j in range(W_out):
+                    h_start = i * stride
+                    w_start = j * stride
+                    h_end = h_start + HH
+                    w_end = w_start + WW
+
+                    window = x_padded[n, :, h_start:h_end, w_start:w_end]
+
+                    # Gradient of filter (dw)
+                    dw[f] += window * dout[n, f, i, j]
+
+                    # Gradient of input data (dx)
+                    dx_padded[n, :, h_start:h_end, w_start:w_end] += w[f] * dout[n, f, i, j]
+
+    # Remove padding from dx_padded to get dx
+    if pad != 0:
+        dx = dx_padded[:, :, pad:-pad, pad:-pad]
+    else:
+        dx = dx_padded
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -691,8 +732,24 @@ def max_pool_forward_naive(x, pool_param):
     # TODO: Implement the max-pooling forward pass                            #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    N, C, H, W = x.shape
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+    H_out = 1 + (H - pool_height) // stride
+    W_out = 1 + (W - pool_width) // stride
+    out = np.zeros((N, C, H_out, W_out))
 
-    pass
+    for n in range(N):
+        for c in range(C):
+            for i in range(H_out):
+                for j in range(W_out):
+                    h_start = i * stride
+                    w_start = j * stride
+                    h_end = h_start + pool_height
+                    w_end = w_start + pool_width
+
+                    out[n, c, i, j] = np.max(x[n, c, h_start:h_end, w_start:w_end])
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -718,7 +775,33 @@ def max_pool_backward_naive(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, pool_param = cache
+    N, C, H, W = x.shape
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    H_out = 1 + (H - pool_height) // stride
+    W_out = 1 + (W - pool_width) // stride
+
+    # Initialize dx to zero
+    dx = np.zeros_like(x)
+
+    for n in range(N):  # For each image in the batch
+        for c in range(C):  # For each channel
+            for i in range(H_out):
+                for j in range(W_out):
+                    h_start = i * stride
+                    w_start = j * stride
+                    h_end = h_start + pool_height
+                    w_end = w_start + pool_width
+
+                    # Find the index of the max value within the pool window
+                    max_index = np.argmax(x[n, c, h_start:h_end, w_start:w_end])
+                    max_coord = np.unravel_index(max_index, (pool_height, pool_width))
+
+                    # Increment the corresponding element in dx
+                    dx[n, c, h_start + max_coord[0], w_start + max_coord[1]] += dout[n, c, i, j]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
